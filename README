@@ -1,0 +1,3 @@
+0xLisp is a Lisp compiler written in Scala for the DCPU-16 in Notch's new game, 0x10c which I am working on as a way to learn how to write a compiler. 
+It is currently very simplistic, though I hope to expand it more in the future as I learn more.
+Pull requests are welcome, suggestions, comments and pointers are more welcome.
