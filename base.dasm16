@@ -1,0 +1,56 @@
+;Compiled code goes above here.
+SET PC, exit
+
+;Frees the list pointed to by A
+:freeList
+         SET [A], 0
+         JSR tail
+         IFE 0, A
+             SET PC, POP
+         SET PC, freeList
+
+;Sets A to the sum of the values contained in the list at A
+:sum
+         SET PUSH, J ;Setup
+         SET J, SP
+         IFE 0, A
+             ADD PC, 8 ;If A = 0, we're at the end of the list so return 0
+         SET PUSH, A ;Store the current node in a local variable
+         JSR tail ;A now points to the next node
+         JSR sum  ;A now contains the sum of all nodes after this
+         SET B, POP ;B now contains the pointer to the current node
+         ADD B, 1
+         ADD A, [B]
+         SET SP, J
+         SET J, POP
+         SET PC, POP
+
+;Adds a node containing the value of B which points to A, Sets A to the address
+;of the new node
+:cons
+         SET C, A
+         JSR nextFreeNode
+         SET [A], 1
+         SET (1+A), B
+         SET (2+A), C
+         SET PC, POP
+
+;Finds the memory location of the next available node and puts it in A
+:nextFreeNode
+         SET A, exit ;Set to beginning of nodespace
+         ADD A, 2
+         IFE [A], 0  ;If this node is free, return
+             SET PC, POP
+         ADD A, 3    ;Move to next node
+         IFG 0x7FFC, [A] ;If next node is before the end of application space
+             SUB PC, 6   ;try again
+         SET A, 0    ;Return failure.
+         SET PC, POP
+
+;Sets A to the next node after A
+:tail
+         ADD A, 2
+         SET A, [A]
+         SET PC, POP
+
+:exit 
