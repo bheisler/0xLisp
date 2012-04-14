@@ -97,11 +97,9 @@ class AssemblyWriter( val writer: Writer ) extends Handler {
   def isZero( call: Call, depth: Int ) {
     assertArgumentCount( 1, call )
     //TODO: Need to come up with a better way to do this.
-    writeln( "SET B, A", depth )
-    writeln( "IFE 0, B", depth )
-    writeln( "SET A, 1", depth + 1 )
-    writeln( "IFN 0, B", depth )
-    writeln( "SET A, 0", depth + 1 )
+    writeln( "SUB A, 1", depth )
+    writeln( "SET A, 0", depth )
+    writeln( "SUB A, 0", depth )
   }
   
   def not( call: Call, depth: Int ) {
