@@ -8,22 +8,42 @@ object Parser {
   
   object LispParsers extends JavaTokenParsers {
     
-    class Wrap[+T](name:String,parser:Parser[T]) extends Parser[T] {
+    class Wrap[+T](parser:Parser[T]) extends Parser[T] {
         def apply(in: Input): ParseResult[T] = {
             val first = in.first
             val pos = in.pos
             val offset = in.offset
             val t = parser.apply(in)
-            println(name+".apply for token "+first+
-                    " at position "+pos+" offset "+offset+" returns "+t)
-            t
+            if ( t.isInstanceOf[NoSuccess] ) {
+              println( t )
+              val failure = t.asInstanceOf[NoSuccess]
+              Failure( "Failed to parse token " + first + " at position " + pos + " offset " + offset + ". Error Message: " + failure.msg, in.rest )
+            }
+            else {
+              t
+            }
         }
+    }
+    
+    class DefNameParser extends Parser[String] {
+      val letters = "abcdefghijklmnopqrstuvwxyz";
+      val numbers = "0123456789";
+      val symbols = "!@#$%^&*?";
+      val allowed = letters + letters.toUpperCase() + numbers + symbols;
+      
+      def apply( in: Input ) : ParseResult[String] = {
+        in.first match {
+          case x if allowed.contains( x ) => apply( in.rest ).map( x + _ )
+          case x if x.isWhitespace => Success( "", in.rest )
+          case x => Failure( x + " is not a valid character for an operation", in.rest )
+        }
+      }
     }
     
     def num: Parser[Num] = wholeNumber ^^ { x => Num( x.toInt.toShort ) }
     def str: Parser[Str] = stringLiteral ^^ { x => Str( x.substring( 1, x.length - 1 ) ) }
         
-    def defName: Parser[String] = """[a-zA-Z_+-\\%\\*/]\w*""".r
+    def defName: Parser[String] = new DefNameParser()
     
     def variable: Parser[Var] = ident ^^ { x => Var( x ) }
     
@@ -39,16 +59,22 @@ object Parser {
     
     def elem: Parser[Element] = comment | defn | expr
       
-    def program: Parser[List[Element]] = rep( elem )
+    def program: Parser[List[Element]] = new Wrap( rep( elem ) )
     
     def parse( text: String ) : List[Element] = {
       parseAll( program, text ).get
     }
     
-    def parse( input: Reader ) : List[Element] = {
+    def parse( input: Reader ) : Option[List[Element]] = {
       val result = parseAll( program, input )
       input.close()
-      result.get
+      if ( result.isEmpty ) {
+        System.err.println( result )
+        None
+      }
+      else {
+        Some(result.get)
+      }
     }
   }
 }

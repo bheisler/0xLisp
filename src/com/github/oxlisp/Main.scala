@@ -24,13 +24,26 @@ object Main extends App {
     
   val parsed = LispParsers.parse( new FileReader( file ) )
   
+  if ( parsed.isEmpty ) {
+    System.exit(1)
+  }
+  
+  val syntaxTree = parsed.get
+  
   var handlers : List[Handler] = new AssemblyWriter( new FileWriter( outfile ) ) :: Nil
   
   if ( args.contains( "--printAst" ) ) {
     handlers = new AstPrinter() :: handlers
   }
   
-  handlers foreach { _.handleTree( parsed, 0 ) }
+  handlers foreach { _.handleTree( syntaxTree, 0 ) }
+  
+  val errors = handlers.foldLeft[List[String]](Nil)( (a, b) => b.errors ::: a )
+  
+  if ( errors.length > 0 ) {
+    outfile.delete();
+    errors foreach { System.err.println _ }
+  }
   
   def showHelp() {
     println("""

@@ -7,10 +7,15 @@ import com.github.oxlisp.Expr
 import com.github.oxlisp.Num
 import scala.io.Source
 
+//TODO: Add proper compile error support.
 class AssemblyWriter( val writer: Writer ) extends Handler {
   
-  var labelMap = new HashMap[String, String]
-  labelMap = labelMap + ( "+" -> "sum" )
+  var callMap = new HashMap[String, (Call, Int) => Unit]
+  callMap += ( "add1" -> add1 )
+  callMap += ( "sub1" -> sub1 )
+  callMap += ( "zero?" -> isZero )
+  callMap += ( "null?" -> isZero )
+  callMap += ( "not" -> not )
 
   override def handleTree( tree: List[Element], depth: Int ) {
     super.handleTree( tree, depth )
@@ -24,36 +29,17 @@ class AssemblyWriter( val writer: Writer ) extends Handler {
   }
   
   def handleNum( num: Num, depth: Int ) {
-    writeln( "SET B, " + num.v, depth );
-    writeln( "JSR cons", depth );
+    writeln( "SET A, " + num.v, depth );
   }
   
   def handleCall( call: Call, depth: Int ) {
-    def handleArgs( args: List[Expr] ) {
-      if ( args.length == 0 ) {
-        return;
+      if ( callMap.contains( call.operation ) ) {
+        handleArgs( call.arguments, depth )
+        callMap.get( call.operation ).get.apply( call, depth )
       }
-      handleArgs( args.tail )
-      handleElement( args.head, depth + 1 )
-    }
-       
-    writeln( "SET PUSH, A", depth )
-    writeln( "SET A, 0", depth )
-    handleArgs( call.arguments )
-    
-    if ( depth > 0 ) {
-    	writeln( "SET X, A", depth );
-    }
-    
-    writeln( "JSR " + labelMap( call.operation ), depth )
-    
-    if ( depth > 0 ) {
-      writeln( "SET B, A", depth )
-      writeln( "SET A, X", depth )
-      writeln( "JSR freeList", depth )
-      writeln( "SET A, POP", depth )
-      writeln( "JSR cons", depth )
-  	}
+      else {
+        println( "Call to unknown function: " + call.operation )
+      }
   }
   
   def write( str: String, depth: Int ) {
@@ -67,5 +53,67 @@ class AssemblyWriter( val writer: Writer ) extends Handler {
   def end() {
     Source.fromFile( "base.dasm16" ).getLines().foreach { writeln( _, 0 ) }
     writer.close()
+  }
+  
+  def handleArgs( args: List[Expr], depth: Int ) {
+    if ( args.length == 0 ) {
+      return;
+    }
+    handleArgs( args.tail, depth )
+    handleElement( args.head, depth + 1 )
+  }
+  
+  def sum( call: Call, depth: Int ) {
+       
+    writeln( "SET PUSH, A", depth )
+    writeln( "SET A, 0", depth )
+    handleArgs( call.arguments, depth )
+    
+    if ( depth > 0 ) {
+        writeln( "SET X, A", depth );
+    }
+    
+    writeln( "JSR sum", depth )
+    
+    if ( depth > 0 ) {
+      writeln( "SET B, A", depth )
+      writeln( "SET A, X", depth )
+      writeln( "JSR freeList", depth )
+      writeln( "SET A, POP", depth )
+      writeln( "JSR cons", depth )
+    }
+  }
+  
+  def add1( call: Call, depth: Int ) {
+    assertArgumentCount( 1, call )
+    writeln( "ADD A, 1", depth )
+  }
+  
+  def sub1( call: Call, depth: Int ) {
+    assertArgumentCount( 1, call )
+    writeln( "SUB A, 1", depth )
+  }
+  
+  def isZero( call: Call, depth: Int ) {
+    assertArgumentCount( 1, call )
+    //TODO: Need to come up with a better way to do this.
+    writeln( "SET B, A", depth )
+    writeln( "IFE 0, B", depth )
+    writeln( "SET A, 1", depth + 1 )
+    writeln( "IFN 0, B", depth )
+    writeln( "SET A, 0", depth + 1 )
+  }
+  
+  def not( call: Call, depth: Int ) {
+    assertArgumentCount( 1, call )
+    writeln( "SET B, A", depth )
+    writeln( "SET A, 65535", depth )
+    writeln( "SUB A, B", depth )
+  }
+  
+  def assertArgumentCount( count: Int, call: Call ) = {
+    if ( call.arguments.length != count ) {
+      emitError( call.operation + " must have " + count + " arguments. " + call.arguments.length + " arguments were passed." );
+    }
   }
 }
