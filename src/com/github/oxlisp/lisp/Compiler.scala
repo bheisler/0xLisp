@@ -13,6 +13,11 @@ class Compiler {
   callMap += ( "zero?" -> isZero )
   callMap += ( "null?" -> isZero )
   callMap += ( "not" -> not )
+  callMap += ( "+" -> add )
+  callMap += ( "-" -> subtract )
+  callMap += { "/" -> divide }
+  callMap += { "%" -> mod }
+  callMap += { "*" -> mult }
   
   var errors: List[String] = Nil
   
@@ -43,7 +48,13 @@ class Compiler {
       if ( callMap.contains( call.operation ) ) {
         val args = handleArgs( call.arguments )
         val doCall = callMap.get( call.operation ).get.apply( call )
-        args ::: doCall
+        val cleanup = if ( call.arguments.length > 3 ) {
+          ADD( SP, call.arguments.length - 3 ) :: Nil
+        }
+        else {
+          Nil
+        }
+        args ::: doCall ::: cleanup
       }
       else {
         println( "Call to unknown function: " + call.operation )
@@ -52,10 +63,11 @@ class Compiler {
   }
   
   def handleArgs( args: List[Expr] ) : List[Instruction] = {
-    args match {
-      case Nil => Nil
-      case x => handleArgs( args.tail ) ::: handleElement( args.head )
-    }
+    val argumentExpressions = args.reverse.flatMap { handleElement( _ ) ::: List( SET( PUSH, A ) ) }.init
+    var popInstructions : List[Instruction] = Nil
+    if ( args.length >= 3 ) { popInstructions = SET( C, POP ) :: popInstructions }
+    if ( args.length >= 2 ) { popInstructions = SET( B, POP ) :: popInstructions }
+    argumentExpressions ::: popInstructions
   }
   
   def add1( call: Call ) : List[Instruction] = {
@@ -80,6 +92,31 @@ class Compiler {
     List( SET( B, A ),
           SET( A, 65535 ),
           SUB( A, B ) )
+  }
+  
+  def add( call: Call ) : List[Instruction] = {
+    assertArgumentCount( 2, call )
+    ADD( A, B ) :: Nil
+  }
+  
+  def subtract( call: Call ) : List[Instruction] = {
+    assertArgumentCount( 2, call )
+    SUB( A, B ) :: Nil
+  }
+  
+  def divide( call: Call ) : List[Instruction] = {
+    assertArgumentCount( 2, call );
+    DIV( A, B ) :: Nil
+  }
+  
+  def mult( call: Call ) : List[Instruction] = {
+    assertArgumentCount( 2, call )
+    MUL( A, B ) :: Nil
+  }
+  
+  def mod( call: Call ) : List[Instruction] = {
+    assertArgumentCount( 2, call )
+    MOD( A, B ) :: Nil
   }
   
   def assertArgumentCount( count: Int, call: Call ) = {

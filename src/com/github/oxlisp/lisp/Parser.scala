@@ -42,7 +42,7 @@ object LispParsers extends JavaTokenParsers {
   class DefNameParser extends Parser[String] {
     val letters = "abcdefghijklmnopqrstuvwxyz";
     val numbers = "0123456789";
-    val symbols = "!@#$%^&*?";
+    val symbols = "-+/*!@#$%^&?";
     val allowed = letters + letters.toUpperCase() + numbers + symbols;
     
     def discardWhitespace( in: Input ): Input = {

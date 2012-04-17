@@ -29,15 +29,15 @@ object Values {
     Literal( value )
   }
  
-  case object Pop extends Value {
+  case object POP extends Value {
     override def toString = "POP"
   }
   
-  case object Push extends Value {
+  case object PUSH extends Value {
     override def toString = "PUSH"
   }
   
-  case object Peek extends Value {
+  case object PEEK extends Value {
     override def toString = "PEEK"
   }
   
