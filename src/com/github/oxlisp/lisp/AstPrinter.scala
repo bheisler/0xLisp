@@ -14,6 +14,7 @@ class AstPrinter( ) {
     case defAsm: DefAsm => handleDefAsm( defAsm, depth )
     case comment : Comment => handleComment( comment )
     case v: Var => handleVar( v, depth )
+    case let: Let => handleLet( let, depth )
   }
   
   val indentStr = "  "
@@ -39,9 +40,10 @@ class AstPrinter( ) {
   
   def handleCall( call: Call, depth: Int ) = {
     printIndent( depth )
-    print( "Call " + call.operation + "(" )
+    println( "Call " + call.operation + "(" )
     handleTree(call.arguments, depth + 1 )
-    println( " )" )
+    printIndent( depth )
+    println( ")" )
   }
   
   def handleDef( defn: Def, depth: Int ) = {
@@ -65,5 +67,11 @@ class AstPrinter( ) {
     println( "]" )
     print( defn.defn );
     println( "\n")
+  }
+  
+  def handleLet( let: Let, depth: Int ) {
+    print( "Let:" )
+    let.variables.foreach { x=> print( x._1.name + "=" + x._2 + " " ) }
+    handleElement(let.body, depth + 1)
   }
 }

@@ -5,20 +5,8 @@ import com.github.oxlisp.assembly.Values._
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.ListBuffer
 
-class Compiler {
-  
-  var callMap = new HashMap[String, Call => List[Instruction] ]
-  callMap += ( "add1" -> add1 )
-  callMap += ( "sub1" -> sub1 )
-  callMap += ( "zero?" -> isZero )
-  callMap += ( "null?" -> isZero )
-  callMap += ( "not" -> not )
-  callMap += ( "+" -> add )
-  callMap += ( "-" -> subtract )
-  callMap += { "/" -> divide }
-  callMap += { "%" -> mod }
-  callMap += { "*" -> mult }
-  
+class Compiler(val scope: Scope) {
+    
   var errors: List[String] = Nil
   
   def emitError( error: String ) {
@@ -37,6 +25,13 @@ class Compiler {
   def handleElement( elem: LispElement ) : List[Instruction] = elem match {
     case num: Num => handleNum( num )
     case call : Call => handleCall( call )
+    case v: Var => handleVar( v )
+    case let : Let => {
+      val child = new Compiler( scope.newSubScope )
+      val instructions = child.handleLet(let)
+      errors = errors ::: child.errors
+      instructions
+    }
     case x => emitError( "Unknown element: " + x ); Nil
   }
   
@@ -44,22 +39,31 @@ class Compiler {
     SET( A, num.v ) :: Nil
   }
   
+  def handleVar( variable: Var ) : List[Instruction] = {
+    val offset = scope.getVariable( variable )
+    offset match {
+      case Some(o) => SET( A, o ) :: Nil
+      case None => emitError( "Undefined variable " + variable ); Nil
+    }
+  }
+  
   def handleCall( call: Call ) : List[Instruction] = {
-      if ( callMap.contains( call.operation ) ) {
-        val args = handleArgs( call.arguments )
-        val doCall = callMap.get( call.operation ).get.apply( call )
-        val cleanup = if ( call.arguments.length > 3 ) {
-          ADD( SP, call.arguments.length - 3 ) :: Nil
-        }
-        else {
-          Nil
-        }
-        args ::: doCall ::: cleanup
+    val target = scope.getCall(call.operation)
+    if ( target.isDefined ) {
+      val args = handleArgs( call.arguments )
+      val doCall = target.get.apply( call, this )
+      val cleanup = if ( call.arguments.length > 3 ) {
+        ADD( SP, call.arguments.length - 3 ) :: Nil
       }
       else {
-        println( "Call to unknown function: " + call.operation )
         Nil
       }
+      args ::: doCall ::: cleanup
+    }
+    else {
+      println( "Call to unknown function: " + call.operation )
+      Nil
+    }
   }
   
   def handleArgs( args: List[Expr] ) : List[Instruction] = {
@@ -69,54 +73,16 @@ class Compiler {
     if ( args.length >= 2 ) { popInstructions = SET( B, POP ) :: popInstructions }
     argumentExpressions ::: popInstructions
   }
-  
-  def add1( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 1, call )
-    ADD( A, 1 ) :: Nil
+    
+  def handleLet( let: Let ) : List[Instruction] = {
+    val argumentExpressions = let.variables.flatMap{ x => handleLetVariable( x._1, x._2 ) }
+    val subexpression = handleElement(let.body) 
+    List( SET( PUSH, J ), SET( J, SP ) ) ::: argumentExpressions ::: subexpression ::: List( SET( SP, J ) )
   }
   
-  def sub1( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 1, call )
-    SUB( A, 1 ) :: Nil
-  }
-  
-  def isZero( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 1, call )
-    List( SUB( A, 1 ),
-          SET( A, 0 ),
-          SUB( A, 0 ) )
-  }
-  
-  def not( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 1, call )
-    List( SET( B, A ),
-          SET( A, 65535 ),
-          SUB( A, B ) )
-  }
-  
-  def add( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 2, call )
-    ADD( A, B ) :: Nil
-  }
-  
-  def subtract( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 2, call )
-    SUB( A, B ) :: Nil
-  }
-  
-  def divide( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 2, call );
-    DIV( A, B ) :: Nil
-  }
-  
-  def mult( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 2, call )
-    MUL( A, B ) :: Nil
-  }
-  
-  def mod( call: Call ) : List[Instruction] = {
-    assertArgumentCount( 2, call )
-    MOD( A, B ) :: Nil
+  def handleLetVariable( variable: Var, expression: Expr ) : List[Instruction] = {
+    scope.putVariable( variable, Offset( scope.nextOffset, J ) )
+    handleElement(expression) ::: List( SET( PUSH, A ) )
   }
   
   def assertArgumentCount( count: Int, call: Call ) = {

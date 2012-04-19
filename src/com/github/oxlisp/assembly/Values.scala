@@ -53,8 +53,14 @@ object Values {
     override def toString = "O"
   }
   
-  case class Offset( val value: Literal, val reg: Register ) {
-    override def toString = "[" + value + "+" + reg + "]"
+  case class Offset( val value: Short, val reg: Register ) extends Value {
+    override def toString = {
+      value match {
+        case x if x > 0 => "[" + value + "+" + reg + "]"
+        case x if x == 0 => "[" + reg + "]"
+        case x if x < 0 => "[" + (65536 + value) + "+" + reg + "]" 
+      }
+    }
   }
   
   case class WordAt( private[Values] val value : Value ) extends Value {

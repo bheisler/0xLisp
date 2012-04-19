@@ -33,7 +33,7 @@ object Main extends App {
     new AstPrinter().handleTree(syntaxTree, 0)
   }
   
-  val compiler = new Compiler()
+  val compiler = new Compiler(Scope.defaultScope)
   
   val instructions = compiler.compile( syntaxTree )
   

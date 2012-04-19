@@ -97,11 +97,17 @@ object LispParsers extends JavaTokenParsers {
   def asm: Parser[String] = new DefAsmParser()
     
   def variable: Parser[Var] = ident ^^ { x => Var( x ) }
+  
+  def letVariable: Parser[(Var, Expr)] = "(" ~ variable ~ expr ~ ")" ^^
+  { case "("~variable~expression~")" => (variable, expression) }
     
   def call: Parser[Call] = "(" ~ defName ~ rep( expr ) ~ ")" ^^
   { case "("~ident~expressions~")" => Call( ident, expressions ) }
     
-  def expr: Parser[Expr] = num | str | variable | call
+  def let: Parser[Let] = "(let" ~ "(" ~ rep( letVariable ) ~ ")" ~ expr ~ ")" ^^
+  { case "(let"~"("~variables~")"~expression~")" => Let( variables, expression ) }
+  
+  def expr: Parser[Expr] = let | num | str | variable | call
     
   def defn: Parser[Def] = "(def" ~ defName ~ "[" ~ rep( variable ) ~ "]" ~ expr  ~ ")" ^^
   { case "(def"~name~"["~args~"]"~expr~")" => Def(name, args, expr) }
