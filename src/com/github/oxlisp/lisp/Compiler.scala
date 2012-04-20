@@ -2,6 +2,7 @@ package com.github.oxlisp.lisp
 
 import com.github.oxlisp.assembly.Instructions._
 import com.github.oxlisp.assembly.Values._
+import Types._
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.ListBuffer
 
@@ -32,6 +33,7 @@ class Compiler(val scope: Scope) {
       errors = errors ::: child.errors
       instructions
     }
+    case comment: Comment => Nil
     case x => emitError( "Unknown element: " + x ); Nil
   }
   
@@ -47,11 +49,36 @@ class Compiler(val scope: Scope) {
     }
   }
   
+  def getType( expr: Expr ) : Type = expr match {
+    case num: Num => INT
+    case v: Var => UNKNOWN
+    case call: Call => scope.getProcedure( call.operation ).map( _.ret ).getOrElse(VOID)
+    case let: Let => getType( let.body )
+  }
+  
+  def validateCall( call: Call ) : Boolean = {
+    val optProcedure = scope.getProcedure( call.operation )
+    if ( !optProcedure.isDefined ) {
+      emitError( "Call to unknown procedure: " + call.operation )
+      return false
+    }
+    
+    val procedure = optProcedure.get
+    val argumentTypes = call.arguments.map(getType)
+    val zipped = procedure.args.zip( argumentTypes )
+    if ( !zipped.forall( x => x._1.matches( x._2 ) ) ) {
+      emitError( "Procedure " + call.operation + " expects arguments of type: " + procedure.args.mkString(", ") +
+          " but found " + argumentTypes.mkString(", ") )
+      return false;
+    }
+    true
+  }
+  
   def handleCall( call: Call ) : List[Instruction] = {
-    val target = scope.getCall(call.operation)
-    if ( target.isDefined ) {
+    if ( validateCall( call ) ) {
+      val target = scope.getProcedure(call.operation).get
       val args = handleArgs( call.arguments )
-      val doCall = target.get.apply( call, this )
+      val doCall = target.implementation
       val cleanup = if ( call.arguments.length > 3 ) {
         ADD( SP, call.arguments.length - 3 ) :: Nil
       }
@@ -61,7 +88,6 @@ class Compiler(val scope: Scope) {
       args ::: doCall ::: cleanup
     }
     else {
-      println( "Call to unknown function: " + call.operation )
       Nil
     }
   }
