@@ -16,4 +16,6 @@ case class Var( val name: String ) extends Expr
 
 case class Let( val variables : List[(Var, Expr)], body: Expr ) extends Expr
 
+case class If( val test: Expr, val conseq: Expr, val altern: Expr ) extends Expr
+
 case class Comment( val text: String ) extends LispElement

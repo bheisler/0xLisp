@@ -3,12 +3,15 @@ package com.github.oxlisp.lisp
 import scala.collection.mutable.Map
 import com.github.oxlisp.assembly.Values.Value
 import com.github.oxlisp.assembly.Instructions._
+import java.util.concurrent.atomic.AtomicInteger
 
 class Scope(val parent: Option[Scope]) {
 
   private var variableMap: Map[Var, Value] = Map()
   
   private var callMap: Map[String, Procedure] = Map()
+  
+  private val labelCount = new AtomicInteger
   
   def getVariable( v: Var ) : Option[Value] = variableMap.get(v).orElse{ parent.flatMap{ x => x.getVariable( v ) } }
   
@@ -19,6 +22,8 @@ class Scope(val parent: Option[Scope]) {
   def nextOffset : Short = ( -( variableMap.size + 1 ) ).toShort
   
   def newSubScope = new Scope( Some(this) )
+  
+  def nextLabelCount = labelCount.incrementAndGet
 }
 
 object Scope {

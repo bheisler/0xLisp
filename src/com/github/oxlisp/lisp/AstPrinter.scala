@@ -15,6 +15,7 @@ class AstPrinter( ) {
     case comment : Comment => handleComment( comment )
     case v: Var => handleVar( v, depth )
     case let: Let => handleLet( let, depth )
+    case cond: If => handleIf( cond, depth )
   }
   
   val indentStr = "  "
@@ -73,5 +74,17 @@ class AstPrinter( ) {
     print( "Let:" )
     let.variables.foreach { x=> print( x._1.name + "=" + x._2 + " " ) }
     handleElement(let.body, depth + 1)
+  }
+  
+  def handleIf( cond: If, depth: Int ) {
+    printIndent( depth )
+    print( "If:" )
+    handleElement( cond.test, depth + 1 )
+    printIndent( depth )
+    print( "Then: " )
+    handleElement( cond.conseq, depth + 1 )
+    printIndent( depth )
+    print( "Else: " )
+    handleElement( cond.altern, depth + 1 )
   }
 }

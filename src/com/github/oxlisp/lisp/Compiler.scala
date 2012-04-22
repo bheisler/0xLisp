@@ -33,6 +33,7 @@ class Compiler(val scope: Scope) {
       errors = errors ::: child.errors
       instructions
     }
+    case cond: If => handleIf( cond )
     case comment: Comment => Nil
     case x => emitError( "Unknown element: " + x ); Nil
   }
@@ -90,6 +91,17 @@ class Compiler(val scope: Scope) {
     else {
       Nil
     }
+  }
+  
+  def handleIf( cond: If ) : List[Instruction] = {
+    //TODO: Change this to use relative jumps rather than labels
+    val testInstruction = handleElement( cond.test )
+    val thenInst = handleElement( cond.conseq )
+    val elseInst = handleElement( cond.altern )
+    val thenLabel = LocalLabel( "then" + scope.nextLabelCount )
+    val endLabel = LocalLabel( "end" + scope.nextLabelCount );
+    testInstruction ::: List( SET( PC, thenLabel ) ) ::: elseInst ::: List( SET( PC, endLabel ), DefineLocalLabel( thenLabel.name ) ) ::: 
+      thenInst ::: List( DefineLocalLabel( endLabel.name ) )    
   }
   
   def handleArgs( args: List[Expr] ) : List[Instruction] = {

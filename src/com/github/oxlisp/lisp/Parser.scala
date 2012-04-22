@@ -107,7 +107,10 @@ object LispParsers extends JavaTokenParsers {
   def let: Parser[Let] = "(let" ~ "(" ~ rep( letVariable ) ~ ")" ~ expr ~ ")" ^^
   { case "(let"~"("~variables~")"~expression~")" => Let( variables, expression ) }
   
-  def expr: Parser[Expr] = let | num | str | variable | call
+  def condIf: Parser[If] = "(if"~call~expr~expr~")" ^^
+  { case "(if"~test~conseq~altern~")" => If( test, conseq, altern ) }
+  
+  def expr: Parser[Expr] = let | condIf | num | str | variable | call
     
   def defn: Parser[Def] = "(def" ~ defName ~ "[" ~ rep( variable ) ~ "]" ~ expr  ~ ")" ^^
   { case "(def"~name~"["~args~"]"~expr~")" => Def(name, args, expr) }
