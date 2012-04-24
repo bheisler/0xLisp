@@ -10,4 +10,4 @@ abstract class Procedure( val args: List[Type], val ret: Type ) {
   protected def shortImpl : Instruction = throw new RuntimeException
 }
 
-abstract class Test( val arg: Type ) extends Procedure( List(arg), BOOL )
+abstract class Test( override val args: List[Type] ) extends Procedure( args, BOOL )

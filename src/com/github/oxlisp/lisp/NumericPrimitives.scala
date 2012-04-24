@@ -18,7 +18,12 @@ object NumericPrimitives {
     ( "zero?" -> isZero ),
     ( "null?" -> isZero ),
     ( "even?" -> isEven ),
-    ( "odd?" -> isOdd ) )
+    ( "odd?" -> isOdd ),
+    ( "=" -> isEqual ),
+    ( "<" -> isLesser ),
+    ( ">" -> isGreater ),
+    ( "<=" -> isLesserEqual ),
+    ( ">=" -> isGreaterEqual ) )
   
   def add1 : Procedure = new Procedure( List( INT ), INT ){
     override def shortImpl = ADD( A, 1 )
@@ -52,15 +57,35 @@ object NumericPrimitives {
     override def shortImpl = MOD( A, B )
   }
   
-  def isZero : Test = new Test( INT ) {
+  def isZero : Test = new Test( List( INT ) ) {
     override def shortImpl = IFE( A, 0 )
   }
   
-  def isOdd : Test = new Test( INT ) {
+  def isOdd : Test = new Test( List( INT ) ) {
     override def implementation = List( MOD( A, 2 ), IFE( A, 1 ) )
   }
   
-  def isEven : Test = new Test( INT ) {
+  def isEven : Test = new Test( List( INT ) ) {
     override def implementation = List( MOD( A, 2 ), IFE( A, 0 ) )
+  }
+  
+  def isEqual : Test = new Test( List( INT, INT ) ) {
+    override def shortImpl = IFE( A, B )
+  }
+  
+  def isGreater : Test = new Test( List( INT, INT ) ) {
+    override def shortImpl = IFG( A, B )
+  }
+  
+  def isLesserEqual : Test = new Test( List( INT, INT ) ) {
+    override def shortImpl = IFG( B, A )
+  }
+  
+  def isGreaterEqual : Test = new Test( List( INT, INT ) ) {
+    override def implementation = List( IFN( A, B ), IFG( A, B ) )
+  }
+  
+  def isLesser : Test = new Test( List( INT, INT ) ) {
+    override def implementation = List( IFG( A, B ), IFN( A, B ) )
   }
 }

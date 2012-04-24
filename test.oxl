@@ -1,4 +1,6 @@
-(if (odd? 5) 1 (* 4 4))
+(let ((x (cons 5 (cons 10 5)))) (+ (head x) (tail (tail x))))
+
+;(if (odd? 5) 1 (* 4 4))
 
 ;(odd? (+ (* (add1 1) 2) (/ 9 3)))
 

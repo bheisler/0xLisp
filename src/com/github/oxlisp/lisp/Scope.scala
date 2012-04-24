@@ -30,6 +30,7 @@ object Scope {
   def defaultScope : Scope = {
     val scope = new Scope( None )
     scope.callMap = scope.callMap ++ NumericPrimitives.callMap
+    scope.callMap = scope.callMap ++ HeapPrimitives.callMap
     scope
   }
 }

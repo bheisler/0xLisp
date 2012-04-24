@@ -52,7 +52,7 @@ class Compiler(val scope: Scope) {
   
   def getType( expr: Expr ) : Type = expr match {
     case num: Num => INT
-    case v: Var => UNKNOWN
+    case v: Var => ANY
     case call: Call => scope.getProcedure( call.operation ).map( _.ret ).getOrElse(VOID)
     case let: Let => getType( let.body )
   }
