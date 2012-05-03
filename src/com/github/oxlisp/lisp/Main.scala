@@ -28,14 +28,16 @@ object Main extends App {
   }
   
   val syntaxTree = parsed.get
-   
+  
   if ( args.contains( "--printAst" ) ) {
     new AstPrinter().handleTree(syntaxTree, 0)
   }
   
+  val translatedTree = LambdaTranslator.apply( syntaxTree )
+  
   val compiler = new Compiler(Scope.defaultScope)
   
-  val instructions = compiler.compile( syntaxTree )
+  val instructions = compiler.compile( translatedTree )
   
   if ( compiler.errors.length > 0 ) {
     compiler.errors foreach { System.err.println _ }

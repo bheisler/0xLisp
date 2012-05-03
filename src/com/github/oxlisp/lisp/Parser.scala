@@ -110,17 +110,17 @@ object LispParsers extends JavaTokenParsers {
   def condIf: Parser[If] = "(if"~call~expr~expr~")" ^^
   { case "(if"~test~conseq~altern~")" => If( test, conseq, altern ) }
   
-  def expr: Parser[Expr] = let | condIf | num | str | variable | call
-    
-  def defn: Parser[Def] = "(def" ~ defName ~ "[" ~ rep( variable ) ~ "]" ~ expr  ~ ")" ^^
-  { case "(def"~name~"["~args~"]"~expr~")" => Def(name, args, expr) }
+  def funCall: Parser[FunCall] = "(funcall"~expr~rep(expr)~")" ^^
+  { case "(funcall"~closure~args~")" => FunCall( closure, args ) }
   
-  def defAsm: Parser[DefAsm] = "(defasm" ~ defName ~ "[" ~ rep( variable ) ~ "]" ~ asm ~ ")" ^^
-  { case "(defasm"~name~"["~args~"]"~expr~")" => DefAsm(name, args, expr) }
+  def lambda: Parser[Lambda] = "(lambda"~"("~rep(variable)~")"~expr~")" ^^
+  { case "(lambda"~"("~params~")"~defn~")" => Lambda( params, defn ) }
   
-  def comment: Parser[Comment] = """;.*""".r ^^ { x => Comment( x.replace( ";", "" ) ) } 
+  def expr: Parser[Expr] =  let | condIf | num | str | variable | funCall | lambda | call
   
-  def elem: Parser[LispElement] = comment | defAsm | defn | expr
+  def comment: Parser[Comment] = """;.*""".r ^^ { x => Comment( x.replace( ";", "" ) ) }
+  
+  def elem: Parser[LispElement] = comment | expr
     
   def program: Parser[List[LispElement]] = new Wrap( rep( elem ) )
   

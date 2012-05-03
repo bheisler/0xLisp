@@ -12,6 +12,7 @@ object Types {
   
   case object VOID extends Type
   
+  case object CLOSURE extends Type
   case object ANY extends Type {
     override def matches( other: Type ) : Boolean =  {
       true
@@ -19,4 +20,5 @@ object Types {
   }
   
   case class CONS( val left: Type, val right: Type ) extends Type
+  
 }

@@ -10,12 +10,12 @@ class AstPrinter( ) {
     case x : Num => handleNum( x, depth )
     case x : Str => handleStr( x, depth )
     case call : Call => handleCall( call, depth )
-    case defn : Def => handleDef( defn, depth )
-    case defAsm: DefAsm => handleDefAsm( defAsm, depth )
     case comment : Comment => handleComment( comment )
     case v: Var => handleVar( v, depth )
     case let: Let => handleLet( let, depth )
     case cond: If => handleIf( cond, depth )
+    case lambda: Lambda => handleLambda( lambda, depth )
+    case funCall: FunCall => handleFunCall( funCall, depth )
   }
   
   val indentStr = "  "
@@ -47,32 +47,14 @@ class AstPrinter( ) {
     println( ")" )
   }
   
-  def handleDef( defn: Def, depth: Int ) = {
-    printIndent( depth )
-    print( "Define " + defn.name + " " )
-    print( "[" )
-    print( defn.args.map{ _.name }.mkString( ", " ) )
-    println( "]" )
-    handleElement( defn.defn, depth + 1 )
-    println( "\n" )
-  }
-  
   def handleComment( comment: Comment ) = {
     println( "//" + comment.text )
-  }
-  
-  def handleDefAsm( defn: DefAsm, depth: Int ) {
-    print( "Define " + defn.name + " " )
-    print( "[" )
-    print( defn.args.map{ _.name }.mkString( ", " ) )
-    println( "]" )
-    print( defn.defn );
-    println( "\n")
   }
   
   def handleLet( let: Let, depth: Int ) {
     print( "Let:" )
     let.variables.foreach { x=> print( x._1.name + "=" + x._2 + " " ) }
+    print( "\n" )
     handleElement(let.body, depth + 1)
   }
   
@@ -86,5 +68,20 @@ class AstPrinter( ) {
     printIndent( depth )
     print( "Else: " )
     handleElement( cond.altern, depth + 1 )
+  }
+  
+  def handleLambda( lambda: Lambda, depth: Int ) {
+    printIndent(depth)
+    print( "Lambda" )
+    print( "(" + lambda.params.mkString(", ") + ")\n" )
+    handleElement( lambda.defn, depth + 1)
+  }
+  
+  def handleFunCall( funCall: FunCall, depth: Int ) {
+    printIndent(depth)
+    print( "Closure call to " + funCall.closure + "\n" )
+    printIndent(depth)
+    print( "Args:\n" )
+    handleTree(funCall.args, depth + 1 )
   }
 }

@@ -1,36 +1,63 @@
 package com.github.oxlisp.lisp
 
-import scala.collection.mutable.Map
-import com.github.oxlisp.assembly.Values.Value
-import com.github.oxlisp.assembly.Instructions._
 import java.util.concurrent.atomic.AtomicInteger
+import scala.collection.mutable.HashMap
+import scala.collection.mutable.HashSet
+import com.github.oxlisp.assembly.Values.Value
+import com.github.oxlisp.assembly.AssemblyScope
+import com.github.oxlisp.assembly.AssemblyScope
 
-class Scope(val parent: Option[Scope]) {
-
-  private var variableMap: Map[Var, Value] = Map()
+class Scope(val parent: Option[Scope], val asmScope: AssemblyScope ) {
+    
+  private val variableSet = HashSet[Var]();
   
-  private var callMap: Map[String, Procedure] = Map()
+  private val callMap = HashMap[String, Procedure]()
+  
+  val labels = HashMap[String, Code]()
   
   private val labelCount = new AtomicInteger
   
-  def getVariable( v: Var ) : Option[Value] = variableMap.get(v).orElse{ parent.flatMap{ x => x.getVariable( v ) } }
+  def getVariable( v: Var ) : Option[Value] = {
+    if ( variableSet.contains(v) ) {
+      return Some( asmScope.getVariable(this, v) );
+    }
+    else parent.flatMap( _.getVariable( v ) )
+  }
   
   def getProcedure( name:String ) : Option[Procedure] = callMap.get( name ).orElse( parent.flatMap{ _.getProcedure( name ) } )
   
-  def putVariable( v: Var, value: Value ) = variableMap.put(v, value)
+  def getLabel( target: String ) : Option[Code] = labels.get( target ).orElse( parent.flatMap{ _.getLabel( target ) } )
   
-  def nextOffset : Short = ( -( variableMap.size + 1 ) ).toShort
+  def putVariable( v: Var ) = {
+    variableSet += v
+    asmScope.putLocalVar(this, v)
+  }
   
-  def newSubScope = new Scope( Some(this) )
+  def freeVariable( v: Var ) = asmScope.freeLocalVar(this, v)
+  
+  def putParam( v: Var ) = {
+    variableSet += v
+    asmScope.putParam( v )
+  }
+  
+  def prepareParam = asmScope.prepareParam;
+  def freePrepared = asmScope.freePrepared
+  def freePrepared( num: Int ) = asmScope.freePrepared( num )
+      
+  def putLabels( labels: TraversableOnce[(String, Code)]) = this.labels ++= labels
+  
+  def newSubScope = new Scope( Some(this), asmScope )
+  
+  def newAssemblyScope = Scope.defaultScope
   
   def nextLabelCount = labelCount.incrementAndGet
 }
 
 object Scope {
   def defaultScope : Scope = {
-    val scope = new Scope( None )
-    scope.callMap = scope.callMap ++ NumericPrimitives.callMap
-    scope.callMap = scope.callMap ++ HeapPrimitives.callMap
+    val scope = new Scope( None, new AssemblyScope )
+    scope.callMap ++= NumericPrimitives.callMap
+    scope.callMap ++= HeapPrimitives.callMap
     scope
   }
 }
