@@ -49,8 +49,8 @@ object Values {
     override def toString = "PC"
   }
   
-  case object O extends Value {
-    override def toString = "O"
+  case object EX extends Value {
+    override def toString = "EX"
   }
   
   case class Offset( val value: Short, val reg: Register ) extends Value {

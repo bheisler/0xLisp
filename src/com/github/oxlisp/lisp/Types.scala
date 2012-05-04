@@ -7,7 +7,7 @@ object Types {
     }
   }
   
-  case object INT extends Type
+  case object INTEGER extends Type
   case object BOOL extends Type
   
   case object VOID extends Type

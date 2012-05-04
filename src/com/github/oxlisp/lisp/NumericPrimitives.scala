@@ -25,67 +25,67 @@ object NumericPrimitives {
     ( "<=" -> isLesserEqual ),
     ( ">=" -> isGreaterEqual ) )
   
-  def add1 : Procedure = new Procedure( List( INT ), INT ){
+  def add1 : Procedure = new Procedure( List( INTEGER ), INTEGER ){
     override def shortImpl = ADD( A, 1 )
   }
     
-  def sub1 : Procedure = new Procedure( List( INT ), INT ){
+  def sub1 : Procedure = new Procedure( List( INTEGER ), INTEGER ){
     override def shortImpl = SUB( A, 1 )
   }
     
-  def not : Procedure = new Procedure( List( INT ), INT ){
+  def not : Procedure = new Procedure( List( INTEGER ), INTEGER ){
     override def shortImpl = XOR( A, 0xFFFF )
   }
   
-  def add : Procedure = new Procedure( List( INT, INT ), INT ){
+  def add : Procedure = new Procedure( List( INTEGER, INTEGER ), INTEGER ){
     override def shortImpl = ADD( A, B )
   }
   
-  def subtract : Procedure = new Procedure( List( INT, INT ), INT ){
+  def subtract : Procedure = new Procedure( List( INTEGER, INTEGER ), INTEGER ){
     override def shortImpl = SUB( A, B )
   }
   
-  def divide : Procedure = new Procedure( List( INT, INT ), INT ){
+  def divide : Procedure = new Procedure( List( INTEGER, INTEGER ), INTEGER ){
     override def shortImpl = DIV( A, B )
   }
   
-  def mult : Procedure = new Procedure( List( INT, INT ), INT ){
+  def mult : Procedure = new Procedure( List( INTEGER, INTEGER ), INTEGER ){
     override def shortImpl = MUL( A, B )
   }
   
-  def mod : Procedure = new Procedure( List( INT, INT ), INT ){
+  def mod : Procedure = new Procedure( List( INTEGER, INTEGER ), INTEGER ){
     override def shortImpl = MOD( A, B )
   }
   
-  def isZero : Test = new Test( List( INT ) ) {
+  def isZero : Test = new Test( List( INTEGER ) ) {
     override def shortImpl = IFE( A, 0 )
   }
   
-  def isOdd : Test = new Test( List( INT ) ) {
-    override def implementation = List( MOD( A, 2 ), IFE( A, 1 ) )
+  def isOdd : Test = new Test( List( INTEGER ) ) {
+    override def shortImpl = IFB( A, 1 )
   }
   
-  def isEven : Test = new Test( List( INT ) ) {
-    override def implementation = List( MOD( A, 2 ), IFE( A, 0 ) )
+  def isEven : Test = new Test( List( INTEGER ) ) {
+    override def shortImpl = IFC( A, 1 )
   }
   
-  def isEqual : Test = new Test( List( INT, INT ) ) {
+  def isEqual : Test = new Test( List( INTEGER, INTEGER ) ) {
     override def shortImpl = IFE( A, B )
   }
   
-  def isGreater : Test = new Test( List( INT, INT ) ) {
+  def isGreater : Test = new Test( List( INTEGER, INTEGER ) ) {
     override def shortImpl = IFG( A, B )
   }
   
-  def isLesserEqual : Test = new Test( List( INT, INT ) ) {
+  def isLesserEqual : Test = new Test( List( INTEGER, INTEGER ) ) {
     override def shortImpl = IFG( B, A )
   }
   
-  def isGreaterEqual : Test = new Test( List( INT, INT ) ) {
-    override def implementation = List( IFN( A, B ), IFG( A, B ) )
+  def isGreaterEqual : Test = new Test( List( INTEGER, INTEGER ) ) {
+    override def implementation = List( IFE( A, B ), IFG( A, B ) )
   }
   
-  def isLesser : Test = new Test( List( INT, INT ) ) {
-    override def implementation = List( IFG( A, B ), IFN( A, B ) )
+  def isLesser : Test = new Test( List( INTEGER, INTEGER ) ) {
+    override def implementation = List( IFE( A, B ), IFL( A, B ) )
   }
 }
