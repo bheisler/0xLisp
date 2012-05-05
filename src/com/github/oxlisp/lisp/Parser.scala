@@ -77,11 +77,25 @@ object LispParsers extends JavaTokenParsers {
     }
   }
   
-  class NumberLiteralParser extends Parser[Num] {
-    val delegate = wholeNumber ^^ { x => Num( x.toInt ) }
+  trait NumberLiteralParser extends Parser[Num] {
+    def regex: Parser[String]
+    def radix: Int
+    def trim( x: String ): String = x
+    val delegate = regex ^^ { x =>
+      val trimmed = trim(x)
+      val noUnderscores = trimmed.replace("_", "")
+      Num( Integer.parseInt( noUnderscores, radix ) ) 
+    }
     
     def apply( in: Input ) : ParseResult[Num] = {
-      delegate( in ) match {
+      val returned = try{ 
+        delegate( in );
+      }
+      catch {
+        case nfe: NumberFormatException => return Failure( "Value is not a valid integer.", in )
+      }
+      
+      returned match {
         case Success( Num(x), next ) if ( x >= 0 && x <= 65535 ) => Success( Num( x ), next )
         case Success( Num(x), next ) => Failure( "Integer literals must be between 0 and 65535. Value was " + x, next )
         case x => x
@@ -89,7 +103,31 @@ object LispParsers extends JavaTokenParsers {
     }
   }
   
-  def num: Parser[Num] = new NumberLiteralParser()
+  trait Prefixed extends NumberLiteralParser {
+    override def trim(x: String) = x.substring(2)
+  }
+  
+  object DecimalParser extends NumberLiteralParser{ 
+    def regex = "[0123456789_]*".r;
+    def radix = 10
+  }
+  
+  object OctalParser extends NumberLiteralParser with Prefixed {
+    def regex = "0o[01234567_]*".r
+    def radix = 8
+  }
+  
+  object HexadecimalParser extends NumberLiteralParser with Prefixed {
+    def regex = "0x[0123456789aAbBcCdDeEfF_]*".r
+    def radix = 16
+  }
+  
+  object BinaryParser extends NumberLiteralParser with Prefixed {
+    def regex = "0b[01_]*".r
+    def radix = 2
+  }
+  
+  def num: Parser[Num] = BinaryParser | HexadecimalParser | OctalParser | DecimalParser
   def str: Parser[Str] = stringLiteral ^^ { x => Str( x.substring( 1, x.length - 1 ) ) }
         
   def defName: Parser[String] = new DefNameParser()

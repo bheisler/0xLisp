@@ -2,7 +2,7 @@
 
 ;(let ((square (lambda (x) (* x x)))) (- (+ (funcall square 5) (funcall square 4) ) (funcall square 3) ) )
 
-(let ((y 10)) 
+(let ((y 10_000)) 
 	(let ((timesy 
 		(lambda (x) (* x y)))
 	) 
